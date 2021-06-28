@@ -1,0 +1,12 @@
+/Hkanno/hkanno.exe
+*.hkx
+*.HKX
+Managed_Mods/*/*
+Managed_Mods/*/meshes/*
+Managed_Mods/*/Meshes/*
+Managed_Mods/*/Nemesis_Engine/*
+Hkanno/*/*
+ExportFolder/meshes/*
+log.txt
+documents/*
+*.exe

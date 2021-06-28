@@ -1,108 +1,106 @@
 require 'toml-rb'
 require_relative "AnimationFileConverterModule.rb"
 require_relative "UpdateModList.rb"
+require_relative "ConfigReader.rb"
 
-def prepareEnv(targetFileName)
+# Global変数は、基本的にここで初期化する
+def prepareEnv()
     $workspace=Pathname.new(FileUtils.pwd)
-    $managedModsFolder=$workspace.join("Managed_Mods")
-    $exportFolder=Pathname.new(EXPORT_FOLDER.gsub("\\", "/"))
-    $hkannoFolder=$workspace.join("Hkanno")
-    $csvPath=$workspace.join(targetFileName + ".csv")
     $logExporter = LogExporter.new($workspace.join("log.txt").to_s)
+    configHash = ConfigReader::read("Config.ini")
+    if false == configHash[0]
+        return false
+    end
 
-    defaultTomlPath=$workspace.join("ModList.toml")
-    customTomlPath=$workspace.join(targetFileName + ".toml")
+    $managedModsFolder=$workspace.join("Managed_Mods")
+    $exportFolder=configHash[1]["ExportFolder"]
+    $conditionFrom=configHash[1]["DARCondition_Generate_From"]
+    $conditionTo=configHash[1]["DARCondition_Generate_To"]
+    $doesNeedDumpAnnotation=configHash[1]["DoesNeedDumpAnnotation"]
+    $debug=configHash[1]["DEBUG"]
+    $hkannoFolder=$workspace.join("Hkanno")
+    # hkanno dump の出力フォルダを消しておく
+    deleteFolderRecursively($hkannoFolder.join("IMPORTED_ANNO_TEXT"))
+
     updateCsvAndToml()
-    $logExporter.write("Information : Mod List Updated.")
+    $tomlDataHash=TomlRB.load_file($workspace.join("ModList.toml"))
 
-    if !Dir.exist?($exportFolder)
-        $logExporter.write("Error : Export Folder not found! Check config.ini")
-        return false
-    end
-
-    if !File.exist?($csvPath)
-        $logExporter.write("Error : Csv not Found! FileName = " + $csvPath.to_s)
-        return false
-    end
-
-    if !File.exist?(customTomlPath)
-        # ToDo : テンプレートの自動生成
-        $logExporter.write("Information : Custom Mod List not Found! Template File Created.", 1)
-    end
-
-    #Tomlファイル読み込み
-    $tomlDataHash=TomlRB.load_file(defaultTomlPath)
-    TomlRB.load_file(customTomlPath).each do |key, value|
-        $tomlDataHash[key] = value
-    end
-
-    # 指定した番号の範囲の出力先フォルダを削除しておく
-    for num in CONDITIONS_GENERATE_FROM..CONDITIONS_GENERATE_TO
+    # アニメーション出力先を削除しておく
+    for num in $conditionFrom..$conditionTo
         targetFolder=getCustomConditionsFolderPath($exportFolder).join(num.to_s)
     	if Dir.exist?(targetFolder)
     	   begin
     		   deleteFolderRecursively(targetFolder)
     		 rescue => e
-    		   p e.message
+               $logExporter.write(e.message, 2)
     		   return false
     	   end
     	end
     end
-end
 
-# 再帰的なフォルダとファイルの削除
-def deleteFolderRecursively(deleteTarget)
-    if !Dir.exist?(deleteTarget)
-        return
-    end
-
-    targets = Dir::glob(deleteTarget + "**/").sort {
-      |x,y| y.split('/').size <=> x.split('/').size
-    }
-    targets.each {|d|
-      Dir::foreach(d) {|f|
-        File::delete(d+f) if ! (/\.+$/ =~ f)
-      }
-      Dir::rmdir(d)
-    }
 end
 
 def relocateAnimationFiles()
-    $logExporter.write("Information : Start Relocate Animations.")
+    $logExporter.write("Start Relocating Animations Files.")
 
     # Csvを読み込み、CsvManagedData生成
-    createFolderNumber =  CONDITIONS_GENERATE_FROM
+    createFolderNumber =  $conditionFrom
     createCsvManagedDataList = []
     
 	CsvTableConverterModule.getCsvManagedDataList(CSV.table($csvPath, headers: false)).each do |data|
-        flagIncrement=false
+        $logExporter.write("Relocating " + data.tomlSectionData.sectionName + " ...", 0, 1)
         index = data.doesContainSameCondition(createCsvManagedDataList)
         if index[0]
-            $logExporter.write("Information: Same Conditions Found! => Merge to "  + (index[1] + CONDITIONS_GENERATE_FROM).to_s + " ...", 2)
-            AnimationFileConverterModule::execute(data, index[1] + CONDITIONS_GENERATE_FROM)
-        else
-            flagIncrement=true
-            $logExporter.write("Information : Creating DAR Condition Folder " + createFolderNumber.to_s + "...")
-            AnimationFileConverterModule::execute(data, createFolderNumber)
+            $logExporter.write("[" + data.tomlSectionData.sectionName + "] & [" + index[1].tomlSectionData.sectionName + "] Are Same Conditions!", 0, 1)
+            $logExporter.write("Check the priority is what you intended. DAR treats as higher value is higher priority.", -1, 1)
         end
-
+        
+        AnimationFileConverterModule::execute(data, createFolderNumber)
         createCsvManagedDataList << data
-        createFolderNumber += 1 if flagIncrement
+        createFolderNumber += 1
     end
     
-    $logExporter.write("Information : Relocate Animations Finished!")    
+    $logExporter.write("Relocate Animation Files Finished!\n")    
 end
 
 def main
-    # debug
-    system('touch Sample.toml')
-    system('touch Sample.csv')
-    
-    if !prepareEnv("Sample") #debug
+    return if !prepareEnv()
+
+    target = ARGV[0]
+    if target.nil?
+        $logExporter.write("Csv not specified. Finish.\n")
+        system('pause')
         return
+    else
+        $csvPath=$workspace.join(target)
+        if !File.exist?($csvPath) || ".csv" != File.extname($csvPath).downcase
+            $logExporter.write("Csv not Found! File = " + $csvPath.to_s + "\n", 1)
+            system('pause')
+            return
+        end
+
+        # Csvと同名のTomlがあれば、ModList.tomlに上書きする
+        customTomlPath = $workspace.join($csvPath.basename(".*").to_s + ".toml")
+        if File.exists?(customTomlPath)
+            TomlRB.load_file(customTomlPath).each do |key, value|
+                $tomlDataHash[key] = value
+            end
+        end
+
+        begin
+            relocateAnimationFiles
+        rescue => e
+            $logExporter.write("UnExpected Error was Occurred!")
+            $logExporter.write("Please report the auther with log.txt. Be sure to set DEBUG = true.")
+            if $debug
+                $logExporter.write(e.message, -1)
+                $logExporter.write(e.backtrace, -1)
+            end
+        end
     end
 
-    relocateAnimationFiles
+    puts
+    system('pause')
 end
 
 main

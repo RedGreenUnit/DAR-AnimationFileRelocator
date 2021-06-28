@@ -3,15 +3,12 @@ require_relative 'CsvManagedData.rb'
 module AnimationFileConverterModule
     def execute(csvManagedData, exportConditionNumber)
         if !csvManagedData.is_a?(CsvManagedData)
-            $logExporter.write("Error : CsvManagedData is not valid!")
+            $logExporter.write("CsvManagedData is not valid!", 2) if $debug
             return
         end
-
-        $logExporter.write("Information : Converting " + csvManagedData.tomlSectionData.sectionName, 1)
         
-        currentDir=$workspace.join(HKANNO_FOLDER)
-        FileUtils.cd(currentDir)
-        FileUtils.rm(currentDir.join("anno.txt")) if File.exists?(currentDir.join("anno.txt"))
+        FileUtils.cd($hkannoFolder)
+        FileUtils.rm($hkannoFolder.join("anno.txt")) if File.exists?($hkannoFolder.join("anno.txt"))
 
         # コピー先準備 & _customCondition.txt作成
         destFolder = getFileLocationFullPath($exportFolder, exportConditionNumber)
@@ -23,30 +20,43 @@ module AnimationFileConverterModule
         csvManagedData.tomlSectionData.getDestSourceFullPathHash(exportConditionNumber).each {|dest, sourceData|
             # Animationファイルコピー
             sourcePath = csvManagedData.tomlSectionData.getSourceAndHKannoConfig(sourceData)[0]
+            if !File.exists?(sourcePath)
+                $logExporter.write("No such animation file : " + sourcePath.to_s, 2, 2)
+                next
+            end
             destPath = Pathname.new(dest)
-            FileUtils.copy(sourcePath.to_s, destPath.to_s)
+            FileUtils.mkdir_p(destPath.parent) if !Dir.exist?(destPath.parent) # male, female, dlc01などのフォルダを作る
+            FileUtils.copy(sourcePath.to_s, destPath.to_s, {:preserve => true})
+            $logExporter.write("Relocated " + destPath.basename.to_s  + " to " + destPath.parent.basename.to_s + " ...", 0, 2)
             
             # anno.txt準備
             updateConfigPath = csvManagedData.tomlSectionData.getSourceAndHKannoConfig(sourceData)[1]
-            if !File::exist?(updateConfigPath)
+            if !File::exist?(updateConfigPath) || "file" != File.ftype(updateConfigPath)
                 # anno.txt未指定ならコピーするだけ
-                $logExporter.write("Information : Hkanno Annotation file not specified. Skip Conversion...")
+                $logExporter.write("Hkanno Annotation file not specified. Skip Conversion...", 0, 2)
                 next
             end
 
-            File.open(currentDir.join("anno.txt"), "wb") do |annoTxt|
-                File.open(updateConfigPath).each_line do |line|
-                    # todo : 追加の差し込み
-                    annoTxt << line
-                end
-            end
+            #File.open(currentDir.join("anno.txt"), "wb") do |annoTxt|
+            #    File.open(updateConfigPath).each_line do |line|
+            #        # todo : 追加の差し込み
+            #        annoTxt << line
+            #    end
+            #end
+            #commandLine="hkanno.exe update -i anno.txt \"" + dest.to_s + "\""
 
             # hkanno.exe update -i anno.txt {Target}
-            FileUtils.cd(currentDir)
-            #commandLine="hkanno.exe update -i anno.txt \"" + dest.to_s + "\""
-            commandLine="hkanno.exe update -i " + "\"" + updateConfigPath.to_s + "\""  + " \"" + dest.to_s + "\""
+            time = File.mtime(destPath)
+            commandLine="hkanno.exe update -i " + "\"" + updateConfigPath.to_s + "\""  + " \"" + destPath.to_s + "\""
             system(commandLine)
-            $logExporter.write(commandLine, 2)
+
+            # HKanno.exe update に成功すると、ファイルの更新日時が変わる
+            if time == File.mtime(destPath)
+                $logExporter.write("Relocate animation was succeeded, but conversion by hkanno.exe would be failed. This file might be for SSE.", 1, 2)
+            else
+                $logExporter.write("Relocate and Convert animation was Succeeded!", 0, 2)
+            end
+            $logExporter.write(commandLine, -1, 2) if $debug
         }
     end
 

@@ -59,8 +59,8 @@ class CsvManagedData
 	def setDataForExport(csvRow, tomlData)
 		tomlSectionName=csvRow.shift
 		if !tomlData.has_key?(tomlSectionName)
-			$LogExporter.write("Error : No Section was found. Name = " + tomlSectionName)
-			return false
+			$logExporter.write("No Section was found. Name = " + tomlSectionName, 2)
+			return
 		end
 		@tomlSectionData = TomlSectionData.new(tomlSectionName, tomlData[tomlSectionName])
 		@csvManagedDataPartList = createDataPartList(csvRow)
@@ -94,10 +94,10 @@ class CsvManagedData
 	def doesContainSameCondition(csvManagedDataList)
 		csvManagedDataList.each do |data|
             if self.csvManagedDataPartList.sort_by(&:condition) == data.csvManagedDataPartList.sort_by(&:condition)
-				return true, csvManagedDataList.find_index(data)
+				return true, data
             end
         end
-		return false, 0
+		return false, self
 	end
 
 	# _customCondition.txt取得
@@ -108,9 +108,9 @@ class CsvManagedData
 			dataPart.orConditionList.each do |orCondition|
 				text = text + " OR\n" + orCondition
 			end
-			text = text + " AND\n" # ANDの後ろに何もなくてもエラーにならないみたい
+			text = text + " AND\n"
 		end
-		return text
+		return text.chop.chop.chop.chop # 末尾の"AND\n"を削除
 	end
 
 	# Csv出力行の取得
@@ -149,7 +149,7 @@ module CsvTableConverterModule
 		csvManagedDataList = []
 		csvTable.each do |row|
 			if row.size == 0
-                $logExporter.write("Error : Invalid Csv Line was found ! Line = " + csvTable.find_index(row).to_s)
+                $logExporter.write("Invalid Csv Line was found ! Line = " + csvTable.find_index(row).to_s, 2, 1)
                 return
             end
 

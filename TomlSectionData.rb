@@ -10,7 +10,8 @@ class TomlSectionData
         @sectionDataHash=sectionDataHash
         @modFolder=getPreDefinedHashValue("modFolder")
         @location=getPreDefinedHashValue("location")
-        @hkannonPreset=getPreDefinedHashValue("HkannoPreset")
+        @hkannonPreset=getPreDefinedHashValue("hkannoPreset")
+        @comment=getPreDefinedHashValue("comment")
     end
 
     # コピー元とコピー先のPathnameをHashで取得する。
@@ -29,6 +30,7 @@ class TomlSectionData
     def getSourceAndHKannoConfig(value)
         sourceFileName = value["sourceFileName"]
         hkannoConfig = value["hkannoConfig"]
+        hkannoConfig = "" if hkannoConfig.nil?
         sourcePath = getFileLocationFullPath($managedModsFolder.join(@modFolder), @location, sourceFileName)
         
         return sourcePath, $hkannoFolder.join(@hkannonPreset).join(hkannoConfig)
@@ -39,7 +41,7 @@ class TomlSectionData
         txt=""
         if @sectionDataHash.has_key?(keyName)
             txt = @sectionDataHash[keyName].to_s
-            @sectionDataHash = @sectionDataHash.reject{|key, value| key.to_s == keyName}
+            @sectionDataHash = @sectionDataHash.reject{|key, value| key.to_s == keyName} # ここで取り除いておくことで、残りはアニメーションファイルのみになる
         end
 
         return txt

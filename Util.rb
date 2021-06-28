@@ -1,8 +1,8 @@
-HKANNO_FOLDER="HKAnno"
-MANAGED_MODS="Managed_Mods"
-EXPORT_FOLDER="E:\\my document\\game\\skyrimse_backup\\MO2_BaseDir\\overwrite"
-CONDITIONS_GENERATE_FROM=100000
-CONDITIONS_GENERATE_TO=101000
+# DARのフォルダを返す
+def getDarRootFolderPath(dataFolderPath)
+    return dataFolderPath.join("meshes")
+          .join("actors").join("character").join("animations").join("DynamicAnimationReplacer")
+end
 
 # DARの_CustomConditionsのパスを返す
 def getCustomConditionsFolderPath(dataFolderPath)
@@ -23,6 +23,7 @@ def getFileLocationFullPath(modPath, locationAlias, fileName=nil)
         path = path.join("meshes")
                    .join("actors").join("character").join("animations")
     elsif is_number?(locationAlias)
+        # _CustomConditionsのフォルダ
         path = path.join("meshes")
                    .join("actors").join("character").join("animations").join("DynamicAnimationReplacer").join("_CustomConditions")
                    .join(locationAlias.to_s)
@@ -32,16 +33,39 @@ def getFileLocationFullPath(modPath, locationAlias, fileName=nil)
     elsif locationAlias == "female"
         path = path.join("meshes")
                    .join("actors").join("character").join("animations").join("female")
+    elsif locationAlias.include?("|")
+        # ActorBaseIdのフォルダ
+        path = path.join("meshes")
+                   .join("actors").join("character").join("animations").join("DynamicAnimationReplacer")
+                   .join(locationAlias.split("|")[0]).join(locationAlias.split("|")[1])
+
     else
         path = path.join("meshes")
                    .join("actors").join("character").join("animations")
     end
 
-    path = path.join(fileName) if !fileName.nil?
+    fileName.split("/").each {|item| path = path.join(item)} if !fileName.nil?
 
     return path
 end
 
 def is_number?(obj)
     obj.to_s == obj.to_i.to_s
+end
+
+# 再帰的なフォルダとファイルの削除
+def deleteFolderRecursively(deleteTarget)
+    if !Dir.exist?(deleteTarget)
+        return
+    end
+
+    targets = Dir::glob(deleteTarget + "**/").sort {
+      |x,y| y.split('/').size <=> x.split('/').size
+    }
+    targets.each {|d|
+      Dir::foreach(d) {|f|
+        File::delete(d+f) if ! (/\.+$/ =~ f)
+      }
+      Dir::rmdir(d)
+    }
 end

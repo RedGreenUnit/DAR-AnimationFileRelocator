@@ -15,10 +15,21 @@ class LogExporter
 		}
 	  end
 
-	def write(message, indent=0, isNewLine=true, showConsole=true)
+	def write(message, logLevel = 0, indent=0, isNewLine=true, showConsole=true)
 		char=""
 		if (isNewLine)
 			char = char + "\n"
+		end
+
+		case logLevel
+		when 0 then
+			char = char + "[Info] "
+		when 1 then
+			char = char + "[Warning] "
+		when 2 then
+			char = char + "[ERROR] "
+		else
+			char = char + "          "
 		end
 
 		for num in 1..indent
