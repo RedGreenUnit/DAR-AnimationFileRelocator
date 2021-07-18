@@ -28,7 +28,8 @@ end
 
 def createCsvLine(tomlSectionName, conditionTxt="")
     data = CsvManagedData.new
-    data.setDataForImport(tomlSectionName, conditionTxt)
+    #data.setDataForImport(tomlSectionName, conditionTxt)
+    data.setDataForImport(tomlSectionName, "") # _customCondition.txtの出力は許可待ち
     return data.getCsvLines
 end
 
