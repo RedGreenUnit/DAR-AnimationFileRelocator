@@ -4,9 +4,14 @@ require_relative "UpdateModList.rb"
 require_relative "ConfigReader.rb"
 
 # Global変数は、基本的にここで初期化する
-def prepareEnv()
-    $workspace=Pathname.new(FileUtils.pwd)
+def prepareEnv(workspace)
+    $workspace=Pathname.new(workspace)
+    if !Dir.exists?($workspace)
+        puts "Workspace does not exist. Finish.\n\n"
+        return false
+    end
     $logExporter = LogExporter.new($workspace.join("log.txt").to_s)
+        
     configHash = ConfigReader::read("Config.ini")
     if false == configHash[0]
         return false
@@ -64,9 +69,16 @@ def relocateAnimationFiles()
 end
 
 def main
-    return if !prepareEnv()
+    workspace = ARGV[0]
+    if workspace.nil?
+        $logExporter.write("Workspace not specified. Finish.\n")
+        system('pause')
+        return
+    else        
+        return if !prepareEnv(workspace)
+    end
 
-    target = ARGV[0]
+    target = ARGV[1]
     if target.nil?
         $logExporter.write("Csv not specified. Finish.\n")
         system('pause')
@@ -74,7 +86,7 @@ def main
     else
         $csvPath=$workspace.join(target)
         if !File.exist?($csvPath) || ".csv" != File.extname($csvPath).downcase
-            $logExporter.write("Csv not Found! File = " + $csvPath.to_s + "\n", 1)
+            $logExporter.write("Csv not Found! File = " + $csvPath.to_s + "\n", 2)
             system('pause')
             return
         end
