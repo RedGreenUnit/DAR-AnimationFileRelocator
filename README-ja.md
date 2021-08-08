@@ -1,17 +1,16 @@
 # DAR-AnimationFileRelocator
 
 ## [概要]<br>
-  SkyrimSE向けのアニメーションファイル管理ツールです。<br>
-  ManagedModフォルダ配下に置いたSkyrimのアニメーションModを自動的に読み取り、<br>
-  ユーザがカスタマイズした設定ファイルに従ってDynamicAnimationReplacerの管理フォルダに再配置するツールです。<br>
-  再配置後にHkanno.exeのAnnotation Updateを自動実行する機能もあります。Annotate情報はアニメーションファイルごとに指定可能です。<br>
+  SkyrimSEのアニメーションファイルとDARカスタム条件を管理するためのRubyツールです。<br>
+  DARフォルダー、_condition.txtの作成、アニメーションファイルの配置、およびHKanno.exeによるAnnotationは、<br>
+  すべてこのツールで自動化されます。<br>
 
 ## [特徴]<br>
-- DARのModを取り込み、論理条件をカスタマイズできる。<br>
-- hkanno Animation Annotation ToolsによるAnnotation更新を自動化できる。<br>
-- 再配置されたファイルはツールの再実行で自動的に削除され、設定ファイルに基づいて再配置される。<br>
-つまり再現性があるので、アニメーション開発のTry&Errorに有用。<br>
-- 設定ファイルは共有可能。<br>
+- アニメーションファイルは、Configファイルを使用してDARフォルダーに再配置されます。<br>
+  Configファイルは0から作成してもよいですが、このツールで自動生成されたファイルから編集することを強くお勧めします。<br>
+- Configファイルには、すべてのDARカスタム条件と配置アニメーションファイルを記述できます。<br>
+  Exlorerで何千ものDARフォルダーを歩き回る必要がなくなりました。<br>
+- Hkanno Annotationの情報もConfigファイルに記述でき、Hkanno updateの実行も自動化されています。<br>
 
 ## [前提条件]<br>
   Ruby2.4以上 (https://rubyinstaller.org/downloads/) <br>
@@ -25,21 +24,13 @@
 3. Config.ini を必要に応じて編集する。(◆Config.ini 参照)<br>
 
 ### 実行手順<br>
-1. コマンドプロンプトで以下を実行<br>
-$ ruby AnimFileRelocator.rb<br>
-⇒ "ModList.toml"と"ModList.csv" の2ファイルが生成される。<br>
-2. 上記2ファイルをコピーするなどして、同じ形式の別名のファイルを用意する。(以降この2ファイルを設定ファイルと呼びます。編集方法は後述)<br>
-3. 2で用意したCsvを引数にして、1のコマンドを実行する。<br>
-$ ruby AnimFileRelocator.rb hogehoge.csv<br>
+1. "AnimFileRelocator.bat"をダブルクリックする。<br>
+    ⇒ "ModList.toml"と"ModList.csv" の2ファイルが生成される。<br>
+2. 上記2ファイルをコピーするなどして、同じ形式の別名のファイルを用意する。この2ファイルは拡張子を除いて同名とすること。<br>
+3. 用意したファイルを、各自のやりたいことに応じて編集する。<br>
+    [CustomConditionsの編集 (Csv)] と [アニメーション一覧の編集 (Toml)] を参照。<br>
 
-### 実行結果<br>
-- Config.iniの"DARCondition_Generate_From"に記載した数字のDARの管理フォルダから順に、<br>
-  設定ファイルに記載したアニメーションファイルがコピーされる。<br>
-- Csvの設定ファイルに記載したDARの論理式を元に、_customCondition.txtを作成してコピー先に配置する。<br>
-- Tomlの設定ファイルにHkannoの設定がある場合は、hkanno.exe update が各ファイルに対して更新される。<br>
-  更新に成功したかどうかはファイルのタイムスタンプで判断しており、失敗した場合はログに出力する。<br>
-
-### Config.ini<br>
+### Config.iniの編集<br>
    - DARCondition_Generate_From = 100000<br>
        この番号のDARの管理フォルダ(_CustomConditions)から順にアニメーションファイルが配置される。<br>
    - DARCondition_Generate_To = 110000<br>
@@ -54,10 +45,17 @@ $ ruby AnimFileRelocator.rb hogehoge.csv<br>
    - DEBUG = false<br>
        デバッグ用のログ出力が有効になる<br>
 
+## [CustomConditionsの編集 (Csv)]<br>
+### ![CsvEditSample](https://user-images.githubusercontent.com/47932625/126159043-2f1539dc-2b76-405c-a4fb-160127fb0398.PNG)
 
-↓　以降はModder向け<br>
-## Toml設定ファイルの編集<br>
-　★DARの論理式の編集のみに興味のある方は読み飛ばしてください。<br>
+- 1列目はTomlの[セクション名] に該当する。ここに記載されたセクションのModのみがコピーされる。<br>
+- 2カラム目以降はDARの論理式を表し、横列は"AND"、縦列は "OR"を表す。<br>
+    例えば上記画像の3行目 "DAR_-_Diverse_Equipment_Normal_Attack_101008"の論理式は以下のようになる。<br>
+    NOT IsFemale() AND IsEquippedRightType(1) OR IsEquippedRightType(2) OR IsEquippedRightType(3) OR IsEquippedRightType(4)<br>
+    AND IsEquippedLeftType(1) OR IsEquippedLeftType(2) OR IsEquippedLeftType(3) OR IsEquippedLeftType(4)<br>
+- OR条件の行の1列目の"OR"の記載は必須。<br>
+
+## [アニメーション一覧の編集 (Toml)]<br>
 ![tomlImage](https://user-images.githubusercontent.com/47932625/126166789-77b003e6-a1c1-4d99-8ba6-a22cb26cdd47.PNG)
 
 (上記画像を例にする)
@@ -77,17 +75,7 @@ Managed_Modsフォルダに置いたフォルダ名。""でくくること!<br>
 - skysa_sword1.hkannoConfig = "_skysa_sword1_Anno.txt"<br>
 左辺はコピー先のファイル名(拡張子は除外)、右辺はHkanno.exe update -i で指定されるAnnotation定義ファイル<br>
 
-## Csv設定ファイルの編集<br>
-### ![CsvEditSample](https://user-images.githubusercontent.com/47932625/126159043-2f1539dc-2b76-405c-a4fb-160127fb0398.PNG)
-
-- 1列目はTomlの[セクション名] に該当する。ここに記載されたセクションのModのみがコピーされる。<br>
-- 2カラム目以降はDARの論理式を表し、横列は"AND"、縦列は "OR"を表す。<br>
-    例えば上記画像の3行目 "DAR_-_Diverse_Equipment_Normal_Attack_101008"の論理式は以下のようになる。<br>
-    NOT IsFemale() AND IsEquippedRightType(1) OR IsEquippedRightType(2) OR IsEquippedRightType(3) OR IsEquippedRightType(4)<br>
-    AND IsEquippedLeftType(1) OR IsEquippedLeftType(2) OR IsEquippedLeftType(3) OR IsEquippedLeftType(4)<br>
-- OR条件の行の1列目の"OR"の記載は必須。<br>
-
-## Hkannoの更新方法<br>
+## [Hkannoの更新方法]<br>
   Tomlの {アニメーションファイル名}.hkannoConfig = "{Annotate定義ファイル名}"で指定したファイルで、Hkanno.exeの更新が実行される。<br>
   　コマンドライン： Hkanno.exe update -i {Annotate定義ファイル名} {アニメーションファイル名}<br>
   Annotate定義ファイルは、セクションの "hkannoPreset = "で定義したフォルダに直に置くこと。<br>
@@ -98,3 +86,8 @@ Managed_Modsフォルダに置いたフォルダ名。""でくくること!<br>
  (https://www.nexusmods.com/skyrim/mods/89435)<br>
 - Dynamic Animation Replacer<br>
  (https://www.nexusmods.com/skyrimspecialedition/mods/33746)<br>
+<br>
+- Ruby 2.4<br>
+ (https://rubyinstaller.org)<br>
+- Toml-rb<br>
+ (https://github.com/emancu/toml-rb)<br>
