@@ -85,7 +85,6 @@ Managed_Modsフォルダに置いたフォルダ名。""でくくること!<br>
  (https://www.nexusmods.com/skyrim/mods/89435)<br>
 - Dynamic Animation Replacer<br>
  (https://www.nexusmods.com/skyrimspecialedition/mods/33746)<br>
-<br>
 - Ruby 2.4<br>
  (https://rubyinstaller.org)<br>
 - Toml-rb<br>
