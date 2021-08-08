@@ -53,6 +53,7 @@ def relocateAnimationFiles()
     createCsvManagedDataList = []
     
 	CsvTableConverterModule.getCsvManagedDataList(CSV.table($csvPath, headers: false)).each do |data|
+        next if data.tomlSectionData.nil? # Csvのセクション名がTomlに見つからなかったとき
         $logExporter.write("Relocating " + data.tomlSectionData.sectionName + " ...", 0, 1)
         index = data.doesContainSameCondition(createCsvManagedDataList)
         if index[0]
@@ -71,23 +72,20 @@ end
 def main
     workspace = ARGV[0]
     if workspace.nil?
-        $logExporter.write("Workspace not specified. Finish.\n")
-        system('pause')
+        puts("Workspace not specified. Finish.\n")
         return
-    else        
+    else
         return if !prepareEnv(workspace)
     end
 
     target = ARGV[1]
     if target.nil?
         $logExporter.write("Csv not specified. Finish.\n")
-        system('pause')
         return
     else
         $csvPath=$workspace.join(target)
         if !File.exist?($csvPath) || ".csv" != File.extname($csvPath).downcase
             $logExporter.write("Csv not Found! File = " + $csvPath.to_s + "\n", 2)
-            system('pause')
             return
         end
 
@@ -99,20 +97,20 @@ def main
             end
         end
 
-        begin
-            relocateAnimationFiles
-        rescue => e
-            $logExporter.write("UnExpected Error was Occurred!")
-            $logExporter.write("Please report the auther with log.txt. Be sure to set DEBUG = true.")
-            if $debug
-                $logExporter.write(e.message, -1)
-                $logExporter.write(e.backtrace, -1)
-            end
-        end
+        relocateAnimationFiles
     end
-
-    puts
-    system('pause')
 end
 
-main
+begin
+    main
+rescue => e
+    puts 
+    puts ("An unexpected Error has Occurred!")
+    puts ("Please report the message and log.txt to author. Be sure to set DEBUG = true in Config.ini .")
+    puts 
+    puts e.message
+    puts e.backtrace
+end
+
+puts
+system('pause')

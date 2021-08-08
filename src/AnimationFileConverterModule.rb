@@ -3,7 +3,7 @@ require_relative 'CsvManagedData.rb'
 module AnimationFileConverterModule
     def execute(csvManagedData, exportConditionNumber)
         if !csvManagedData.is_a?(CsvManagedData)
-            $logExporter.write("CsvManagedData is not valid!", 2) if $debug
+            $logExporter.write("CsvManagedData is not valid!", 3, 0, true, false) if $debug
             return
         end
         
@@ -33,7 +33,7 @@ module AnimationFileConverterModule
             updateConfigPath = csvManagedData.tomlSectionData.getSourceAndHKannoConfig(sourceData)[1]
             if !File::exist?(updateConfigPath) || "file" != File.ftype(updateConfigPath)
                 # anno.txt未指定ならコピーするだけ
-                $logExporter.write("Hkanno Annotation file not specified. Skip Conversion...", 0, 2)
+                # $logExporter.write("Hkanno Annotation file not specified. Skip Conversion...", 0, 2)
                 next
             end
 
@@ -56,7 +56,7 @@ module AnimationFileConverterModule
             else
                 $logExporter.write("Relocate and Convert animation was Succeeded!", 0, 2)
             end
-            $logExporter.write(commandLine, -1, 2) if $debug
+            $logExporter.write(commandLine, 3, 0, true, false) if $debug
         }
     end
 

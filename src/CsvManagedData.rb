@@ -59,7 +59,9 @@ class CsvManagedData
 	def setDataForExport(csvRow, tomlData)
 		tomlSectionName=csvRow.shift
 		if !tomlData.has_key?(tomlSectionName)
-			$logExporter.write("No Section was found. Name = " + tomlSectionName, 2)
+			$logExporter.write("No Section was found in Toml. Section Name = " + tomlSectionName, 2)
+			$logExporter.write("Check the definition in Csv column 1.", -1)
+			$logExporter.write(tomlData.to_s, 3, 0, true, false) if $debug
 			return
 		end
 		@tomlSectionData = TomlSectionData.new(tomlSectionName, tomlData[tomlSectionName])
@@ -108,7 +110,7 @@ class CsvManagedData
 			dataPart.orConditionList.each do |orCondition|
 				text = text + " OR\n" + orCondition
 			end
-			text = text + " AND\n"
+			text = text + " AND\n" #if text.gsub(" ", "") != ""
 		end
 		return text.chop.chop.chop.chop # 末尾の"AND\n"を削除
 	end
@@ -137,7 +139,7 @@ class CsvManagedData
     def createDataPartList(row)
         csvManagedDataPartList = []
         row.each do |col|
-            csvManagedDataPartList << CsvManagedDataPart.new(col)
+            csvManagedDataPartList << CsvManagedDataPart.new(col) if !col.nil?
         end
         return csvManagedDataPartList
     end

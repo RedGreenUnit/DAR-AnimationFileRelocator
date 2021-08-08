@@ -28,6 +28,8 @@ class LogExporter
 			char = char + "[Warning] "
 		when 2 then
 			char = char + "[ERROR] "
+		when 3 then
+			char = char + "[DEBUG] "
 		else
 			char = char + "          "
 		end

@@ -89,13 +89,24 @@ def dumpHKannoAnnotation(baseFolderPath, fileNameList, outputDirPath, outputFile
     Dir.rmdir(outputDirPath) if Dir.empty?(outputDirPath)
 end
 
+def doesExcludeDir(baseDir, foreachDir)
+    # マルチバイト文字を含むかどうか
+    foreachDir.bytes do |b|
+        return true if  (b & 0b10000000) != 0
+    end
+
+    return true if "." == foreachDir || ".." == foreachDir || ".modHidden" == foreachDir
+
+    return !baseDir.join(foreachDir).directory?
+end
+
 def updateCsvAndToml
     $logExporter.write("Updating Mod List...")
     $logExporter.write("Start searching mod folders.", 0, 1)
     tomlHash = {}
     csvLines = []
     Dir.foreach($managedModsFolder) {|modFolder|
-        next if "." == modFolder || ".." == modFolder || ".modHidden" == modFolder || !Dir.exist?($managedModsFolder.join(modFolder))
+        next if doesExcludeDir($managedModsFolder, modFolder)
         $logExporter.write("Searching \"" + modFolder + "\" ...", 0, 2)
 
         # デフォルトのアニメーションフォルダを探す
@@ -109,7 +120,7 @@ def updateCsvAndToml
         searchPath = getCustomConditionsFolderPath($managedModsFolder.join(modFolder))
         if Dir.exists?(searchPath)
             Dir.foreach(searchPath) {|conditionNumber|
-                next if "directory" != File::ftype(searchPath.join(conditionNumber)) || "." == conditionNumber || ".." == conditionNumber || 0 == conditionNumber.to_i && conditionNumber != "0"
+                next if doesExcludeDir(searchPath, conditionNumber) || 0 == conditionNumber.to_i && conditionNumber != "0"
                 fileNameList, conditionTxt, comment = findAnimationFiles(searchPath.join(conditionNumber))
                 tomlHash, tomlSectionName = createTomlHash(tomlHash, modFolder, conditionNumber, fileNameList, comment)
                 createCsvLine(tomlSectionName, conditionTxt).each {|line| csvLines << line} if !fileNameList.empty?
@@ -121,9 +132,9 @@ def updateCsvAndToml
         searchPath = getDarRootFolderPath($managedModsFolder.join(modFolder))
         if Dir.exists?(searchPath)
             Dir.foreach(searchPath) {|espFolder|
-                next if "directory" != File::ftype(searchPath.join(espFolder)) || "." == espFolder || ".." == espFolder || "_CustomConditions" == espFolder
+                next if doesExcludeDir(searchPath, espFolder) || "_CustomConditions" == espFolder
                 Dir.foreach(searchPath.join(espFolder)) {|actorBaseId|
-                    next if "directory" != File::ftype(searchPath.join(espFolder).join(actorBaseId)) || "." == actorBaseId || ".." == actorBaseId
+                    next if doesExcludeDir(searchPath.join(espFolder), actorBaseId)
                     fileNameList, conditionTxt, comment = findAnimationFiles(searchPath.join(espFolder).join(actorBaseId))
                     tomlHash, tomlSectionName = createTomlHash(tomlHash, modFolder, espFolder + "\|" + actorBaseId, fileNameList, comment)
                     conditionText = "IsActorBase(\"" + espFolder + "\" | " + actorBaseId + ")"
