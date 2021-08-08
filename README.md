@@ -1,5 +1,7 @@
 # DAR-AnimationFileRelocator
 
+[日本語のReadmeはこちら](./README-ja.md)
+
 ## [OverView]<br>
   This is a ruby tool to manage Animation Files and DAR Custom Conditions for Skyrim SE.<br>
   Creating a DAR folder, _condition.txt, placing animation files, and annotating events <br>

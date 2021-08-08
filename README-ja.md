@@ -77,8 +77,7 @@ Managed_Modsフォルダに置いたフォルダ名。""でくくること!<br>
 
 ## [Hkannoの更新方法]<br>
   Tomlの {アニメーションファイル名}.hkannoConfig = "{Annotate定義ファイル名}"で指定したファイルで、Hkanno.exeの更新が実行される。<br>
-  　コマンドライン： Hkanno.exe update -i {Annotate定義ファイル名} {アニメーションファイル名}<br>
-  Annotate定義ファイルは、セクションの "hkannoPreset = "で定義したフォルダに直に置くこと。<br>
+  実行されたコマンドラインを確認するには、Config.iniで"Debug = true"に設定すること。<br>
 
 
 ## Credits<br>
